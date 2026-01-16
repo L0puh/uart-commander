@@ -2,9 +2,9 @@
 # about 
 tiny example of UART communication for sending commands and telemetry (RXTX) using STM32 and RTOS
 
-- TX - connected to PA8
 - RX - connected to PA9
-- PA10 - connected to LED (for debugging) 
+- TX - connected to PA10
+- PA11 - connected to LED (for debugging) 
 - using 38400 baudrate 
 
 # requirements 
