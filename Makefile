@@ -2,7 +2,7 @@ PROJECT = app
 BUILD_DIR = build
 BIN_DIR = bin
 
-SRC = src/main.c
+SRC = $(wildcard src/*c) 
 OBJ = $(SRC:src/%.c=$(BUILD_DIR)/%.o)
 
 LIBS_DIR = libs
@@ -14,12 +14,12 @@ CC = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 SIZE = arm-none-eabi-size
 
-CFLAGS = -mcpu=cortex-m3 -mthumb -Os -std=c99
+CFLAGS = -mcpu=cortex-m3 -mthumb -Os -std=c99 -DSTM32F1
 CFLAGS += -I$(LIBS_DIR)
 CFLAGS += -I$(LIBS_DIR)/libopencm3/include
 CFLAGS += -I$(LIBS_DIR)/freertos/include
 CFLAGS += -I$(LIBS_DIR)/freertos/portable/GCC/ARM_CM3
-CFLAGS += -I. -DSTM32F1
+CFLAGS += -I. -Iinclude
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -Wall -Wextra
 
