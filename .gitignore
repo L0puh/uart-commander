@@ -3,3 +3,7 @@
 *.json
 build/*
 bin/*
+*/build/*
+*/bin/*
+*/lib/*
+libs/build/*
