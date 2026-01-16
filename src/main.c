@@ -19,7 +19,7 @@ static void serial_task(void *arg __attribute__ ((unused))) {
    int c = '0'-1;
    for (;;) {
       gpio_toggle(LED_PORT, LED_PIN);
-      vTaskDelay(pdMS_TO_TICKS(20));
+      vTaskDelay(pdMS_TO_TICKS(500));
       if ( ++c >= 'Z') {
          uart_putc(c);
          uart_putc('\r');
