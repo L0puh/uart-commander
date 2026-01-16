@@ -1,6 +1,7 @@
-#include "FreeRTOS.h"
-#include "FreeRTOSConfig.h"
-#include "task.h"
+#include <FreeRTOS.h>
+#include <FreeRTOSConfig.h>
+#include <queue.h>
+#include <task.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -11,23 +12,34 @@
 #define LED_RCC_PORT RCC_GPIOA
 #define LED_PIN GPIO10
 
-static void uart_putc(char c){
-   usart_send_blocking(USART1, c);
+static QueueHandle_t tx_queue;
+
+static void uart_send(const char *s){
+   while (*s){
+      xQueueSend(tx_queue, s, portMAX_DELAY);
+      s++;
+   }
+
+}
+
+static void test_task(void *arg __attribute__ ((unused))) {
+   for (;;){
+      uart_send("Test function to send telemetry\n\r");
+      uart_send("                send via queues\n\n\r");
+      vTaskDelay(pdMS_TO_TICKS(1000));
+   }
+
 }
 
 static void serial_task(void *arg __attribute__ ((unused))) {
-   int c = '0'-1;
+   char c;
    for (;;) {
-      gpio_toggle(LED_PORT, LED_PIN);
-      vTaskDelay(pdMS_TO_TICKS(500));
-      if ( ++c >= 'Z') {
-         uart_putc(c);
-         uart_putc('\r');
-         uart_putc('\n');
-         c = '0'-1;
-      } else {
-         uart_putc(c);
+      if (xQueueReceive(tx_queue, &c, 500) == pdPASS){
+         while (!usart_get_flag(USART1, USART_SR_TXE)) 
+            taskYIELD();
+         usart_send(USART1, c);
       }
+      gpio_toggle(LED_PORT, LED_PIN);
 
    }
 }
@@ -35,7 +47,7 @@ static void serial_task(void *arg __attribute__ ((unused))) {
 
 void setup_uart(void){
    rcc_periph_clock_enable(RCC_USART1);
-   // UART - connected to PA9
+
    gpio_set_mode(LED_PORT, 
                  GPIO_MODE_OUTPUT_50_MHZ,
                  GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
@@ -50,12 +62,13 @@ void setup_uart(void){
    usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
    usart_enable(USART1);
 
+   tx_queue = xQueueCreate(256, sizeof(char));
+
 }
 
 void setup_gpio(void){
    rcc_clock_setup_in_hse_8mhz_out_72mhz();
 
-   // PA10 - connected to LED 
    rcc_periph_clock_enable(LED_RCC_PORT);
    gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
                  GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
@@ -68,6 +81,7 @@ int main(void) {
    setup_uart();
 
    xTaskCreate(serial_task, "serial_task", 100, NULL, configMAX_PRIORITIES-1, NULL);
+   xTaskCreate(test_task, "test_task", 100, NULL, configMAX_PRIORITIES-2, NULL);
    vTaskStartScheduler();
 
    for (;;);
